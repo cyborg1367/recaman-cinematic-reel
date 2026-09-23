@@ -1,0 +1,309 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="A 60-second cinematic visualization of Recamán's sequence, synchronized with a through-composed browser-generated piano score." />
+  <meta name="theme-color" content="#101820" />
+  <meta property="og:type" content="website" />
+  <meta property="og:title" content="Recamán — Python in Motion" />
+  <meta property="og:description" content="180 algorithmic decisions transformed into motion, depth, code, color, and music." />
+  <title>Recamán — Python in Motion</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Manrope:wght@500;600;700;800&display=swap');
+    @font-face { font-family: 'Vazirmatn Local'; src: url('./Vazirmatn-Bold.ttf') format('truetype'); font-weight: 100 900; font-style: normal; font-display: swap; }
+    :root { --ink:#101820; --panel:#18242b; --line:#617580; --muted:#aeb9ad; --gold:#dca84a; --teal:#56a6a6; --terracotta:#d96c4d; --ivory:#f4ebdd; }
+    * { box-sizing:border-box; }
+    body { margin:0; min-height:100vh; display:grid; place-items:center; background:#0b1115; color:var(--ivory); font-family:Manrope,system-ui,sans-serif; }
+    #reel { width:min(100vw, 56.25vh); height:min(177.78vw, 100vh); max-width:540px; max-height:960px; position:relative; overflow:hidden; isolation:isolate; background:radial-gradient(circle at 50% 34%,#2b3a3c 0,#18262a 38%,#101820 76%); transition:background 1.7s ease; }
+    #reel[data-act="two"] { background:radial-gradient(circle at 50% 31%,#323459 0,#1b2940 41%,#101820 78%); }
+    #reel[data-act="three"] { background:radial-gradient(circle at 50% 34%,#31454a 0,#172e34 42%,#101820 78%); }
+    #reel[data-cadence="true"] { background:radial-gradient(circle at 50% 34%,#3a3a34 0,#202827 43%,#101820 80%); }
+    #reel::before { content:""; position:absolute; inset:-20%; pointer-events:none; z-index:-1; opacity:.38; background:radial-gradient(circle at 18% 22%,#dca84a52 0,transparent 25%),radial-gradient(circle at 87% 49%,#56a6a652 0,transparent 29%); filter:blur(38px); }
+    #reel::after { content:""; position:absolute; inset:0; pointer-events:none; opacity:.11; background-image:radial-gradient(#f4ebdd 0.55px,transparent .7px); background-size:5px 5px; mix-blend-mode:soft-light; }
+    .top { position:absolute; top:5.5%; left:8%; right:8%; display:flex; justify-content:space-between; align-items:start; opacity:0; pointer-events:none; }
+    .eyebrow { font:500 10px/1.2 "DM Mono",monospace; letter-spacing:.17em; color:#98a8c8; text-transform:uppercase; }
+    .title { margin-top:8px; font-size:20px; font-weight:800; letter-spacing:-.055em; }
+    .counter { font:500 11px "DM Mono",monospace; color:var(--gold); padding:7px 9px; border:1px solid #536b6d; border-radius:20px; background:#152126a9; }
+    .stage { position:absolute; left:4%; right:4%; top:2.5%; height:54.5%; transform-origin:center; }
+    @keyframes cinema-drift { from { transform:scale(1) translateY(0); } to { transform:scale(1.018) translateY(-2px); } }
+    .axis { position:absolute; left:0; right:0; top:55%; height:1px; background:linear-gradient(90deg,transparent,#aeb7a8 8%,#d6c68f 50%,#aeb7a8 92%,transparent); box-shadow:0 0 15px #dca84a48; }
+    #arcLayer { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; }
+    .tick { position:absolute; top:55%; width:1px; height:8px; background:#a6b0a4; transform:translate(-50%,-1px); opacity:.45; }
+    .tick label { position:absolute; top:13px; left:50%; transform:translateX(-50%); color:#d1d3c8; font:400 9px "DM Mono",monospace; }
+    .dot { position:absolute; top:55%; width:13px; height:13px; transform:translate(-50%,-50%); border-radius:50%; background:var(--ivory); box-shadow:0 0 0 6px #dca84a28,0 0 28px var(--gold); }
+    .value { position:absolute; top:calc(55% + 29px); transform:translateX(-50%); font:700 18px "DM Mono",monospace; color:var(--ivory); text-shadow:0 0 18px #dca84aac; }
+    #reel[data-cadence="true"] .dot { box-shadow:0 0 0 5px #eadabf20,0 0 20px #eadabf88; }
+    #reel[data-cadence="true"] .value { color:#eadabf; text-shadow:0 0 13px #eadabf70; }
+    .decision { opacity:0; }
+    .code-wrap { position:absolute; left:4%; right:4%; bottom:1.8%; height:45.2%; border:1px solid #4b4b45; border-radius:10px; background:#171a1b; overflow:hidden; box-shadow:0 20px 60px #050807cc,0 0 0 1px #dca84a15; opacity:0; transform:translateY(18px); transition:opacity .55s ease,transform .55s cubic-bezier(.2,.8,.2,1); }
+    #reel.code-on .code-wrap { opacity:1; transform:translateY(0); }
+    .code-head { height:36px; display:flex; align-items:center; gap:7px; padding:0 12px; border-bottom:1px solid #333534; color:#cccccc; background:#242827; font:500 10.5px "DM Mono",monospace; }
+    .lights i { display:inline-block; width:7px; height:7px; border-radius:50%; margin-right:3px; background:#f48771; } .lights i:nth-child(2){background:#dcdcaa}.lights i:nth-child(3){background:#4ec9b0}
+    .file-tab { height:36px; display:flex; align-items:center; padding:0 10px; margin-left:5px; color:#fff; background:#171a1b; border-top:2px solid #dca84a; }
+    .lang { margin-left:auto; color:#8c8c8c; font-size:9px; }
+    pre { margin:0; padding:9px 12px 5px; color:#d4d4d4; font:400 9.35px/1.38 "DM Mono",monospace; white-space:pre-wrap; counter-reset:line; }
+    .row { display:block; position:relative; min-height:12.9px; padding:0 7px 0 34px; margin:0 -7px; border-radius:3px; counter-increment:line; transition:background .16s ease,transform .22s cubic-bezier(.2,.9,.3,1),color .16s ease; } .row::before { content:counter(line); position:absolute; left:0; width:26px; color:#858585; text-align:right; transition:color .16s ease; } .row.active { color:#fff; background:linear-gradient(90deg,#dca84a48 0%,#f2c56821 56%,transparent 100%); box-shadow:inset 3px 0 #f6cc72,0 0 16px #dca84a18; text-shadow:0 0 11px #fff4c455; transform:translateX(2px); } .row.active::before { color:#f6cc72; } .row.active::after { content:""; position:absolute; inset:0; pointer-events:none; border-radius:inherit; background:linear-gradient(102deg,transparent 0%,#fff5be00 31%,#fff5be40 51%,#fff5be00 71%,transparent 100%); animation:code-sweep .72s cubic-bezier(.2,.75,.25,1) both; } @keyframes code-sweep { from { transform:translateX(-42%); opacity:0; } 22% { opacity:1; } to { transform:translateX(42%); opacity:0; } }
+    .code-status { position:absolute; left:0; right:0; bottom:0; height:20px; display:flex; align-items:center; justify-content:space-between; padding:0 12px; border-top:1px solid #303331; background:#202322; color:#8f9995; font:400 7.5px "DM Mono",monospace; }
+    .keyword { color:#c586c0; } .num { color:#b5cea8; } .op { color:#d4d4d4; } .name { color:#9cdcfe; } .func { color:#dcdcaa; } .str { color:#ce9178; }
+    .start { position:absolute; inset:0; display:grid; place-items:center; background:#101820ee; z-index:5; transition:opacity .45s; }
+    .start button { border:1px solid #f0c66c; border-radius:999px; color:#182016; background:var(--gold); padding:13px 25px 15px; font:800 14px 'Vazirmatn Local',Tahoma,Arial,sans-serif; cursor:pointer; box-shadow:0 0 30px #dca84a66; }
+    .hint { display:none; }
+    .finish { display:none; }
+    .finish.show { opacity:1; } .finish strong { display:block; font:800 25px/1.45 'Vazirmatn Local',Tahoma,Arial,sans-serif; } .finish span { display:block; margin-top:7px; color:#b9bcae; font:500 10px 'Vazirmatn Local',Tahoma,Arial,sans-serif; }
+    .story { display:none; }
+    .story.show { opacity:1; transform:translateY(0); } .story small { display:block; margin-top:7px; color:#b9c3b5; font:500 10px 'Vazirmatn Local',Tahoma,Arial,sans-serif; }
+    /* V21: the visual, code, and score now behave as one system. */
+    .start { background:linear-gradient(180deg,#10182070,#101820b0); backdrop-filter:blur(2px); }
+    .start button { animation:entry-pulse 2.2s ease-in-out infinite; }
+    @keyframes entry-pulse { 50% { box-shadow:0 0 46px #dca84aaa; transform:translateY(-1px); } }
+    .code-tabs { display:flex; align-self:stretch; align-items:stretch; margin-left:4px; }
+    .code-tab { border:0; border-top:2px solid transparent; background:#202423; color:#7f8985; padding:0 9px; font:500 9px "DM Mono",monospace; }
+    .code-tab.active { color:#fff; background:#171a1b; border-top-color:var(--gold); }
+    .row.active.backward { background:linear-gradient(90deg,#56a6a64a 0%,#77c9c21a 56%,transparent 100%); box-shadow:inset 3px 0 #77c9c2,0 0 16px #56a6a620; }
+    .row.active.backward::before { color:#77c9c2; }
+    .row.active.rejected { background:linear-gradient(90deg,#d96c4d42 0%,#e99a7a18 56%,transparent 100%); box-shadow:inset 3px 0 #e99a7a,0 0 16px #d96c4d20; }
+    .row.active.rejected::before { color:#e99a7a; }
+    .sync-pulse { position:absolute; z-index:3; bottom:45.8%; width:2px; height:0; pointer-events:none; transform:translateX(-50%); background:linear-gradient(0deg,var(--gold),#f7e5a600,transparent); box-shadow:0 0 14px var(--gold); opacity:0; }
+    .sync-pulse.fire { animation:code-link .42s cubic-bezier(.2,.8,.2,1) both; }
+    .sync-pulse.backward { background:linear-gradient(0deg,var(--teal),#a7ece600,transparent); box-shadow:0 0 14px var(--teal); }
+    #reel[data-act="two"] .sync-pulse { background:linear-gradient(0deg,#b59be8,#ddd0ff00,transparent); box-shadow:0 0 14px #b59be8; }
+    #reel[data-act="three"] .sync-pulse { background:linear-gradient(0deg,#e0a46b,#ffe0bc00,transparent); box-shadow:0 0 14px #e0a46b; }
+    @keyframes code-link { 0% { height:0; opacity:0; } 26% { opacity:1; } 68% { height:115px; opacity:.92; } 100% { height:145px; opacity:0; } }
+    .finish { display:block; position:absolute; left:0; right:0; bottom:47.5%; z-index:4; text-align:center; pointer-events:none; opacity:0; transform:translateY(6px); transition:opacity .6s ease,transform .6s ease; }
+    .finish.show { opacity:1; transform:translateY(0); }
+    .finish strong { font:700 12px/1.2 "DM Mono",monospace; letter-spacing:.12em; color:var(--ivory); text-shadow:0 0 16px #f4ebdd80; }
+    .finish span { display:none; }
+    .finish { display:none !important; }
+  </style>
+</head>
+<body>
+  <main id="reel" aria-label="Animated Recamán sequence reel">
+    <header class="top"><div><div class="eyebrow">Algorithmic motion</div><div class="title">Recamán’s Sequence</div></div><div class="counter" id="counter">STEP 00</div></header>
+    <section class="stage" id="stage"><canvas id="arcLayer"></canvas><div class="axis"></div><div class="dot" id="dot"></div><div class="value" id="value">0</div><div class="decision" id="decision">ready to begin</div></section>
+    <section class="code-wrap"><div class="code-head"><span class="lights"><i></i><i></i><i></i></span><span class="file-tab">moonlight_recaman.py</span><span class="lang">Python</span></div><pre><span class="row" id="r1"><span class="keyword">from</span> <span class="name">collections</span> <span class="keyword">import</span> <span class="name">deque</span></span><span class="row" id="r2"><span class="keyword">def</span> <span class="func">recaman</span>(<span class="name">n_terms</span><span class="op">=</span><span class="num">100</span>):</span><span class="row" id="r3">    <span class="name">seen</span>, <span class="name">current</span> <span class="op">=</span> {<span class="num">0</span>}, <span class="num">0</span></span><span class="row" id="r4">    <span class="keyword">yield</span> <span class="name">current</span></span><span class="row" id="r5">    <span class="keyword">for</span> <span class="name">step</span> <span class="keyword">in</span> <span class="func">range</span>(<span class="num">1</span>, <span class="name">n_terms</span>):</span><span class="row" id="r6">        <span class="name">candidate</span> <span class="op">=</span> <span class="name">current</span> <span class="op">-</span> <span class="name">step</span></span><span class="row" id="r7">        <span class="keyword">if</span> <span class="name">candidate</span> <span class="op">&gt;</span> <span class="num">0</span> <span class="keyword">and</span> <span class="name">candidate</span> <span class="keyword">not in</span> <span class="name">seen</span>:</span><span class="row" id="r8">            <span class="name">current</span> <span class="op">=</span> <span class="name">candidate</span></span><span class="row" id="r9">        <span class="keyword">else</span>:</span><span class="row" id="r10">            <span class="name">current</span> <span class="op">+=</span> <span class="name">step</span></span><span class="row" id="r11">        <span class="name">seen</span>.<span class="func">add</span>(<span class="name">current</span>)</span><span class="row" id="r12">        <span class="keyword">yield</span> <span class="name">current</span></span><span class="row" id="r13"><span class="name">sequence</span> <span class="op">=</span> <span class="func">list</span>(<span class="func">recaman</span>(<span class="num">100</span>))</span><span class="row" id="r14"><span class="name">max_value</span> <span class="op">=</span> <span class="func">max</span>(<span class="name">sequence</span>)</span><span class="row" id="r15"><span class="keyword">for</span> <span class="name">step</span>, <span class="name">value</span> <span class="keyword">in</span> <span class="func">enumerate</span>(<span class="name">sequence</span>[<span class="num">1</span>:], <span class="num">1</span>):</span><span class="row" id="r16">    <span class="name">bar</span>, <span class="name">triplet</span> <span class="op">=</span> <span class="func">divmod</span>(<span class="name">step</span><span class="op">-</span><span class="num">1</span>, <span class="num">12</span>)</span><span class="row" id="r17">    <span class="name">chord</span> <span class="op">=</span> <span class="name">MOONLIGHT</span>[<span class="name">bar</span> <span class="op">%</span> <span class="func">len</span>(<span class="name">MOONLIGHT</span>)]</span><span class="row" id="r18">    <span class="name">note</span> <span class="op">=</span> <span class="name">chord</span>.<span class="name">notes</span>[<span class="name">triplet</span> <span class="op">%</span> <span class="num">3</span>]</span><span class="row" id="r19">    <span class="name">velocity</span> <span class="op">=</span> <span class="num">.075</span> <span class="op">+</span> <span class="num">.045</span><span class="op">*</span><span class="name">value</span><span class="op">/</span><span class="name">max_value</span></span><span class="row" id="r20">    <span class="func">piano</span>.<span class="func">play</span>(<span class="name">note</span>, <span class="name">velocity</span>, <span class="name">triplet</span><span class="op">/</span><span class="num">3</span>)</span></pre><div class="code-status"><span>Ln 1, Col 1</span><span>UTF-8 · Python 3.12</span></div></section>
+    <div class="hint">با صدا تماشا کن</div>
+    <div class="start" id="start"><button aria-label="Start the audiovisual experience">گوش کن</button></div>
+    <div class="finish" id="finish"><div><strong>می‌توانی قانونش را بشنوی؟</strong><span>دنبالهٔ رکامان · پایتون</span></div></div>
+  </main>
+  <script>
+    // The visible editor shows a complete, executable Python data pipeline.
+    document.querySelector('.code-wrap').innerHTML=`<div class="code-head"><span class="lights"><i></i><i></i><i></i></span><span class="file-tab">moonlight_recaman.py</span><span class="lang">Python</span></div><pre><span class="row" id="r1"><span class="keyword">def</span> <span class="func">recaman</span>(<span class="name">steps</span><span class="op">=</span><span class="num">100</span>):</span><span class="row" id="r2">    <span class="name">seen</span>, <span class="name">current</span>, <span class="name">values</span> <span class="op">=</span> {<span class="num">0</span>}, <span class="num">0</span>, [<span class="num">0</span>]</span><span class="row" id="r3">    <span class="keyword">for</span> <span class="name">step</span> <span class="keyword">in</span> <span class="func">range</span>(<span class="num">1</span>, <span class="name">steps</span> <span class="op">+</span> <span class="num">1</span>):</span><span class="row" id="r4">        <span class="name">candidate</span> <span class="op">=</span> <span class="name">current</span> <span class="op">-</span> <span class="name">step</span></span><span class="row" id="r5">        <span class="keyword">if</span> <span class="name">candidate</span> <span class="op">&gt;</span> <span class="num">0</span> <span class="keyword">and</span> <span class="name">candidate</span> <span class="keyword">not in</span> <span class="name">seen</span>:</span><span class="row" id="r6">            <span class="name">current</span> <span class="op">=</span> <span class="name">candidate</span></span><span class="row" id="r7">        <span class="keyword">else</span>:</span><span class="row" id="r8">            <span class="name">current</span> <span class="op">+=</span> <span class="name">step</span></span><span class="row" id="r9">        <span class="name">seen</span>.<span class="func">add</span>(<span class="name">current</span>); <span class="name">values</span>.<span class="func">append</span>(<span class="name">current</span>)</span><span class="row" id="r10">    <span class="keyword">return</span> <span class="name">values</span></span><span class="row" id="r11">&nbsp;</span><span class="row" id="r12"><span class="keyword">def</span> <span class="func">moonlight_events</span>(<span class="name">values</span>):</span><span class="row" id="r13">    <span class="name">chords</span> <span class="op">=</span> ((<span class="num">68</span>,<span class="num">73</span>,<span class="num">76</span>), (<span class="num">66</span>,<span class="num">71</span>,<span class="num">75</span>), (<span class="num">66</span>,<span class="num">70</span>,<span class="num">73</span>))</span><span class="row" id="r14">    <span class="name">peak</span>, <span class="name">events</span> <span class="op">=</span> <span class="func">max</span>(<span class="name">values</span>) <span class="keyword">or</span> <span class="num">1</span>, []</span><span class="row" id="r15">    <span class="keyword">for</span> <span class="name">step</span>, <span class="name">value</span> <span class="keyword">in</span> <span class="func">enumerate</span>(<span class="name">values</span>[<span class="num">1</span>:], <span class="num">1</span>):</span><span class="row" id="r16">        <span class="name">bar</span>, <span class="name">triplet</span> <span class="op">=</span> <span class="func">divmod</span>(<span class="name">step</span> <span class="op">-</span> <span class="num">1</span>, <span class="num">12</span>)</span><span class="row" id="r17">        <span class="name">chord</span> <span class="op">=</span> <span class="name">chords</span>[<span class="name">bar</span> <span class="op">%</span> <span class="func">len</span>(<span class="name">chords</span>)]</span><span class="row" id="r18">        <span class="name">events</span>.<span class="func">append</span>({<span class="str">&quot;time&quot;</span>:(<span class="name">step</span><span class="op">-</span><span class="num">1</span>)<span class="op">/</span><span class="num">3</span>, <span class="str">&quot;midi&quot;</span>:<span class="name">chord</span>[<span class="name">triplet</span><span class="op">%</span><span class="num">3</span>], <span class="str">&quot;velocity&quot;</span>:<span class="func">round</span>(<span class="num">48</span><span class="op">+</span><span class="num">40</span><span class="op">*</span><span class="name">value</span><span class="op">/</span><span class="name">peak</span>)})</span><span class="row" id="r19">    <span class="keyword">return</span> <span class="name">events</span></span><span class="row" id="r20"><span class="name">sequence</span> <span class="op">=</span> <span class="func">recaman</span>()</span><span class="row" id="r21"><span class="name">midi_events</span> <span class="op">=</span> <span class="func">moonlight_events</span>(<span class="name">sequence</span>)</span></pre><div class="code-status"><span>100 jumps · 101 values</span><span>UTF-8 · Python 3.12</span></div>`;
+    const values=[0], seen=new Set([0]);
+    for(let step=1; step<=180; step++){ const back=values.at(-1)-step; const next=back>0&&!seen.has(back)?back:values.at(-1)+step; values.push(next); seen.add(next); }
+    const stage=document.querySelector('#stage'), canvas=document.querySelector('#arcLayer'), pen=canvas.getContext('2d');
+    const dot=document.querySelector('#dot'), value=document.querySelector('#value'), counter=document.querySelector('#counter'), decision=document.querySelector('#decision'), story=document.querySelector('#story'), axis=document.querySelector('.axis');
+    let domain=10;
+    const pct=v=>((v+2)/(domain+4))*100;
+    function renderTicks(forDomain=domain){ stage.querySelectorAll('.tick').forEach(t=>t.remove()); const every=forDomain<=30?5:forDomain<=70?10:20; for(let n=0;n<=forDomain;n+=every){ const t=document.createElement('div');t.className='tick';t.style.left=(((n+2)/(forDomain+4))*100)+'%';t.innerHTML='<label>'+n+'</label>';stage.append(t); } }
+    function domainFor(index){ const largest=Math.max(...values.slice(0,index+1)); return Math.max(10,Math.ceil((largest+6)/10)*10); }
+    function sizeCanvas(){ const box=stage.getBoundingClientRect(), dpr=devicePixelRatio||1; canvas.width=Math.round(box.width*dpr); canvas.height=Math.round(box.height*dpr); pen.setTransform(dpr,0,0,dpr,0,0); return box; }
+    function drawAtmosphere(w,h,index){ pen.save(); for(let n=0;n<10;n++){ const x=((n*83+41)%997)/997*w, y=((n*137+19)%631)/631*h, pulse=.06+.04*Math.sin(index*.34+n); pen.fillStyle='#d7ded3';pen.globalAlpha=pulse;pen.beginPath();pen.arc(x,y,1,0,Math.PI*2);pen.fill(); } pen.restore(); }
+    function hexRgb(hex){ const n=parseInt(hex.slice(1),16); return [(n>>16)&255,(n>>8)&255,n&255]; }
+    function mixColor(a,b,t){ const x=hexRgb(a),y=hexRgb(b),s=Math.max(0,Math.min(1,t)),e=s*s*(3-2*s); return `rgb(${x.map((v,i)=>Math.round(v+(y[i]-v)*e)).join(',')})`; }
+    function jumpPalette(index){
+      const one=['#dca84a','#56a6a6'], two=['#b59be8','#70c4c8'], three=['#e0a46b','#68c0b1'], ivory='#eadabf';
+      let palette=index<49?one:index<=72?one.map((c,i)=>mixColor(c,two[i],(index-49)/23)):index<109?two:index<=132?two.map((c,i)=>mixColor(c,three[i],(index-109)/23)):three;
+      if(index>=172)palette=palette.map(c=>mixColor(c,ivory,(index-172)/8));
+      return palette;
+    }
+    const DEPTH_GAP=1.45, CAMERA_FOCAL=720;
+    const smooth=t=>{const x=Math.max(0,Math.min(1,t));return x*x*(3-2*x);};
+    const lerp=(a,b,t)=>a+(b-a)*smooth(t);
+    function cameraFor(index,reveal,w,axisY){
+      const p=Math.max(0,Math.min(1,((Math.max(1,index)-1)+reveal)/180)), depth=smooth((p-.20)/.13);
+      let yaw=0;if(p>.20&&p<=.43)yaw=lerp(0,14,(p-.20)/.23);else if(p>.43&&p<=.70)yaw=lerp(14,-8,(p-.43)/.27);else if(p>.70&&p<=.95)yaw=lerp(-8,11,(p-.70)/.25);else if(p>.95)yaw=11;
+      const pitch=depth*(-3.8+1.05*Math.sin(p*Math.PI*2.15)), orbit=depth*Math.sin((p-.18)*Math.PI*2.2), zoom=1-depth*.105-depth*.018*Math.sin(Math.PI*Math.max(0,(p-.58)/.42));
+      return {index,p,depth,yaw:yaw*Math.PI/180,pitch:pitch*Math.PI/180,cx:w*.5+orbit*w*.018,cy:axisY-depth*3.5,zoom,focal:CAMERA_FOCAL,w,axisY};
+    }
+    function projectPoint(x,y,z,cam){
+      const dx=x-cam.w*.5,dy=y-cam.axisY,cy=Math.cos(cam.yaw),sy=Math.sin(cam.yaw),cp=Math.cos(cam.pitch),sp=Math.sin(cam.pitch),rx=dx*cy+z*sy,rz=-dx*sy+z*cy,ry=dy*cp-rz*sp,rz2=dy*sp+rz*cp,scale=cam.zoom*cam.focal/(cam.focal-rz2*cam.depth);
+      return {x:cam.cx+rx*scale,y:cam.cy+ry*scale,scale};
+    }
+    function arcPoints(from,to,index,reveal,w,axisY,cam){
+      const x1=w*(from+2)/(domain+4),x2=w*(to+2)/(domain+4),r=Math.abs(x2-x1)/2;if(!r||reveal<=0)return [];
+      const cx=(x1+x2)/2,direction=x1<x2?-1:1,vertical=index%2===0?-1:1,z=(index-cam.index)*DEPTH_GAP*cam.depth,segments=Math.max(7,Math.ceil(46*reveal)),points=[];
+      for(let s=0;s<=segments;s++){const t=reveal*s/segments,angle=Math.PI*t,x=cx+direction*r*Math.cos(angle),y=axisY+vertical*r*Math.sin(angle);points.push(projectPoint(x,y,z,cam));}
+      return points;
+    }
+    function strokePoints(points,color,width,alpha,blur){if(points.length<2)return;pen.globalAlpha=alpha;pen.strokeStyle=color;pen.lineWidth=width;pen.lineCap='round';pen.lineJoin='round';pen.shadowColor=color;pen.shadowBlur=blur;pen.beginPath();pen.moveTo(points[0].x,points[0].y);for(let i=1;i<points.length;i++)pen.lineTo(points[i].x,points[i].y);pen.stroke();}
+    function drawJump(from,to,index,reveal,w,axisY,cam,opacity=1,echo=0,trace=false){
+      const forward=to>from,color=jumpPalette(index)[forward?0:1],points=arcPoints(from,to,index,reveal,w,axisY,cam);if(points.length<2)return;
+      const depthAge=(cam.index-index)/Math.max(1,cam.index),fog=1-depthAge*cam.depth*.62,alpha=opacity*fog;
+      pen.save();strokePoints(points,color,4.2+echo*.55,alpha*(.13+echo*.1),14+echo*12);strokePoints(points,color,1.08+echo*.14,Math.min(1,alpha+echo*.2),5+echo*7);
+      if(trace&&reveal>.035&&reveal<.995){const head=points.at(-1),radius=6.5*Math.max(.72,head.scale),glow=pen.createRadialGradient(head.x,head.y,0,head.x,head.y,radius);glow.addColorStop(0,'#fff8df');glow.addColorStop(.2,color);glow.addColorStop(1,'rgba(255,255,255,0)');pen.globalAlpha=.84;pen.shadowBlur=0;pen.fillStyle=glow;pen.beginPath();pen.arc(head.x,head.y,radius,0,Math.PI*2);pen.fill();}pen.restore();
+    }
+    function drawProjectedAxis(w,axisY,cam){const a=projectPoint(w*.035,axisY,0,cam),b=projectPoint(w*.965,axisY,0,cam);pen.save();pen.globalAlpha=.24*cam.depth;pen.strokeStyle='#d9cfad';pen.lineWidth=.8;pen.shadowColor='#dca84a';pen.shadowBlur=8;pen.beginPath();pen.moveTo(a.x,a.y);pen.lineTo(b.x,b.y);pen.stroke();pen.restore();}
+    function drawDecision(decision,progress,w,axisY,cam){ const rawTarget=decision.target,targetX=rawTarget>0?w*(rawTarget+2)/(domain+4):w*.045,fromX=w*(decision.from+2)/(domain+4),a=projectPoint(fromX,axisY,0,cam),b=projectPoint(targetX,axisY,0,cam),color=decision.valid?'#56a6a6':'#d96c4d';pen.save();pen.strokeStyle=color;pen.fillStyle=color;pen.globalAlpha=.18+.62*Math.min(progress/.38,1);pen.lineWidth=1;pen.setLineDash([3,5]);pen.beginPath();pen.moveTo(a.x,a.y);pen.lineTo(b.x,b.y);pen.stroke();pen.setLineDash([]);pen.beginPath();pen.arc(b.x,b.y,8+Math.sin(progress*Math.PI)*4,0,Math.PI*2);pen.stroke();if(decision.valid){pen.globalAlpha=.78;pen.beginPath();pen.arc(b.x,b.y,2.5,0,Math.PI*2);pen.fill();}else if(progress>.26){pen.globalAlpha=.88;pen.lineWidth=1.5;pen.beginPath();pen.moveTo(b.x-4,b.y-4);pen.lineTo(b.x+4,b.y+4);pen.moveTo(b.x+4,b.y-4);pen.lineTo(b.x-4,b.y+4);pen.stroke();}pen.restore(); }
+    const BPM=60, TRIPLET_MS=60000/BPM/3, MAX_VALUE=Math.max(...values);
+    const MOONLIGHT=[
+      {bass:37, notes:[68,73,76]}, {bass:37, notes:[68,73,76]},
+      {bass:35, notes:[66,71,75]}, {bass:35, notes:[66,71,75]},
+      {bass:42, notes:[66,70,73]}, {bass:44, notes:[68,71,75]}
+    ];
+    let scoreMelodySlots=null,markerValue=0,lastProjection=null;
+    function render(index,reveal=1,decisionState=null){
+      const box=sizeCanvas(),w=box.width,h=box.height,axisY=h*.55,cam=cameraFor(index,reveal,w,axisY),melodic=!!(scoreMelodySlots&&scoreMelodySlots[index-1]),echoPulse=Number(melodic)*Math.sin(Math.PI*Math.min(1,reveal)),echoes=new Set([index-12,index-24].filter(x=>x>0)),cadence=index>=172?(index-172)/8:0;
+      lastProjection=cam;pen.clearRect(0,0,w,h);drawProjectedAxis(w,axisY,cam);
+      for(let j=1;j<index;j++){const age=(index-j)/Math.max(1,index),echo=echoes.has(j)?echoPulse:0,base=(.23+.77*(1-age))*(1-cadence*.16);drawJump(values[j-1],values[j],j,1,w,axisY,cam,base,echo,false);}
+      if(decisionState)drawDecision(decisionState,reveal,w,axisY,cam);
+      const arcReveal=Math.max(0,(reveal-.27)/.73);drawJump(values[index-1]||0,values[index]||0,index,arcReveal,w,axisY,cam,1-cadence*.12,0,true);
+      positionMarker(markerValue);dot.style.opacity=String((1-cadence*.12)*(1-cam.depth*.14));value.style.opacity=String((1-cadence*.08)*(1-cam.depth*.08));const flat=Math.max(0,1-cam.depth*1.3);axis.style.opacity=String(flat*(1-cadence*.18));stage.querySelectorAll('.tick').forEach(t=>t.style.opacity=String(flat*(.45-cadence*.12)));
+    }
+    function positionMarker(v){if(!lastProjection)return;const cam=lastProjection,x=cam.w*(v+2)/(domain+4),p=projectPoint(x,cam.axisY,0,cam);dot.style.left=p.x+'px';dot.style.top=p.y+'px';value.style.left=p.x+'px';value.style.top=(p.y+29)+'px';}
+    function moveMarker(v){markerValue=v;positionMarker(v);}
+    renderTicks(); render(0);
+    let ctx, master, reverb, scoreStart=0;
+    function setupAudio(){ ctx=new (window.AudioContext||window.webkitAudioContext)(); master=ctx.createGain(); master.gain.value=.7; const compressor=ctx.createDynamicsCompressor(); compressor.threshold.value=-20; compressor.knee.value=16; compressor.ratio.value=4; compressor.attack.value=.012; compressor.release.value=.38; master.connect(compressor).connect(ctx.destination); reverb=ctx.createConvolver(); const impulse=ctx.createBuffer(2,ctx.sampleRate*3.2,ctx.sampleRate); for(let ch=0;ch<2;ch++){const data=impulse.getChannelData(ch);for(let i=0;i<data.length;i++)data[i]=(Math.random()*2-1)*Math.pow(1-i/data.length,2.25);} reverb.buffer=impulse; const wet=ctx.createGain(); wet.gain.value=.42; reverb.connect(wet).connect(master); }
+    function route(node,amount=.22){ const dry=ctx.createGain(), send=ctx.createGain(); dry.gain.value=1; send.gain.value=amount; node.connect(dry).connect(master); node.connect(send).connect(reverb); }
+    function midiHz(midi){ return 440*Math.pow(2,(midi-69)/12); }
+    function moonlightPiano(midi,when,velocity=.1,length=1.7){ const freq=midiHz(midi), filter=ctx.createBiquadFilter(), env=ctx.createGain(); filter.type='lowpass';filter.frequency.setValueAtTime(3600,when);filter.frequency.exponentialRampToValueAtTime(980,when+length*.72);env.gain.setValueAtTime(.0001,when);env.gain.exponentialRampToValueAtTime(velocity,when+.018);env.gain.exponentialRampToValueAtTime(velocity*.38,when+.42);env.gain.exponentialRampToValueAtTime(.0001,when+length); [[1,.9],[2,.105],[3,.032]].forEach(([ratio,level])=>{const osc=ctx.createOscillator(),gain=ctx.createGain();osc.type='sine';osc.frequency.value=freq*ratio;gain.gain.value=level;osc.connect(gain).connect(filter);osc.start(when);osc.stop(when+length+.04);});filter.connect(env);route(env,.48); }
+    function scheduleMoonlight(start){ const total=(values.length-1)*TRIPLET_MS/1000, fadeStart=start+Math.max(0,total-3), fadeEnd=start+total; master.gain.cancelScheduledValues(start); master.gain.setValueAtTime(.7,start); master.gain.setValueAtTime(.7,fadeStart); master.gain.linearRampToValueAtTime(.0001,fadeEnd); for(let step=1;step<values.length;step++){ const n=step-1, bar=MOONLIGHT[Math.floor(n/12)%MOONLIGHT.length], triplet=n%12, when=start+n*TRIPLET_MS/1000, velocity=.075+.045*(values[step]/MAX_VALUE); if(triplet===0)moonlightPiano(bar.bass,when,.105,3.72); moonlightPiano(bar.notes[triplet%3],when,velocity,1.55); } }
+    function line(ids){ document.querySelectorAll('.row').forEach(x=>x.classList.remove('active')); ids.forEach(id=>document.querySelector('#'+id).classList.add('active')); }
+    let currentIndex=0;
+    function say(words,sub=''){ story.innerHTML=words+(sub?`<small>${sub}</small>`:''); story.classList.add('show'); }
+    function animateJump(i,decisionState){ return new Promise(done=>{ const fromDomain=domain,target=domainFor(i),began=performance.now(),duration=TRIPLET_MS; let markerMoved=false; renderTicks(target); const frame=now=>{ const p=Math.min(1,(now-began)/duration),eased=1-Math.pow(1-p,3); domain=fromDomain+(target-fromDomain)*eased; render(i,eased,decisionState); if(p>.34&&!markerMoved){moveMarker(values[i]);markerMoved=true;} if(p<1)requestAnimationFrame(frame);else{domain=target;render(i,1,null);moveMarker(values[i]);done();} }; requestAnimationFrame(frame); }); }
+    async function run(){ document.querySelector('#start').style.opacity=0; document.querySelector('#reel').classList.add('code-on'); setTimeout(()=>document.querySelector('#start').remove(),480); scoreStart=ctx.currentTime+.18; scheduleMoonlight(scoreStart); await new Promise(done=>setTimeout(done,Math.max(0,(scoreStart-ctx.currentTime)*1000))); for(let i=1;i<values.length;i++){ currentIndex=i; const from=values[i-1],to=values[i],back=to<from,target=from-i,decisionState={from,target,valid:back}; line(i<12?(back?['r3','r4','r5','r6']:['r3','r4','r5','r7','r8','r9']):['r15','r16','r17','r18']); decision.textContent=back?`مقصد جدید · ${i} واحد به عقب`:`مقصد بسته · ${i} واحد به جلو`; value.textContent=to; counter.textContent='STEP '+String(i).padStart(2,'0'); await animateJump(i,decisionState); }
+      document.querySelectorAll('.row').forEach(x=>x.classList.remove('active')); decision.style.opacity=0; setTimeout(()=>document.querySelector('#finish').classList.add('show'),350);
+    }
+    document.querySelector('button').addEventListener('click',()=>{setupAudio();run();});
+  </script>
+  <script>
+    /* V21 cinematic orchestration */
+    const reel=document.querySelector('#reel');
+    const codeWrap=document.querySelector('.code-wrap');
+    const finish=document.querySelector('#finish');
+    const pulse=document.createElement('i');
+    pulse.className='sync-pulse'; reel.append(pulse);
+    const recamanCode=`<div class="code-head"><span class="lights"><i></i><i></i><i></i></span><div class="code-tabs"><button class="code-tab active">recaman.py</button><button class="code-tab">score.py</button></div><span class="lang">Python</span></div><pre><span class="row" id="r1"><span class="keyword">def</span> <span class="func">recaman</span>(<span class="name">steps</span><span class="op">=</span><span class="num">100</span>):</span><span class="row" id="r2">    <span class="name">seen</span>, <span class="name">current</span> <span class="op">=</span> {<span class="num">0</span>}, <span class="num">0</span></span><span class="row" id="r3">    <span class="name">values</span> <span class="op">=</span> [<span class="name">current</span>]</span><span class="row" id="r4">    <span class="keyword">for</span> <span class="name">step</span> <span class="keyword">in</span> <span class="func">range</span>(<span class="num">1</span>, <span class="name">steps</span> <span class="op">+</span> <span class="num">1</span>):</span><span class="row" id="r5">        <span class="name">candidate</span> <span class="op">=</span> <span class="name">current</span> <span class="op">-</span> <span class="name">step</span></span><span class="row" id="r6">        <span class="keyword">if</span> <span class="name">candidate</span> <span class="op">&gt;</span> <span class="num">0</span> <span class="keyword">and</span> <span class="name">candidate</span> <span class="keyword">not in</span> <span class="name">seen</span>:</span><span class="row" id="r7">            <span class="name">current</span> <span class="op">=</span> <span class="name">candidate</span></span><span class="row" id="r8">        <span class="keyword">else</span>: <span class="name">current</span> <span class="op">+=</span> <span class="name">step</span></span><span class="row" id="r9">        <span class="name">seen</span>.<span class="func">add</span>(<span class="name">current</span>)</span><span class="row" id="r10">        <span class="name">values</span>.<span class="func">append</span>(<span class="name">current</span>)</span><span class="row" id="r11">    <span class="keyword">return</span> <span class="name">values</span></span><span class="row" id="r12">&nbsp;</span><span class="row" id="r13"><span class="name">sequence</span> <span class="op">=</span> <span class="func">recaman</span>()</span></pre><div class="code-status"><span>100 jumps · 101 values</span><span>UTF-8 · Python 3.12</span></div>`;
+    const scoreCode=`<div class="code-head"><span class="lights"><i></i><i></i><i></i></span><div class="code-tabs"><button class="code-tab">recaman.py</button><button class="code-tab active">score.py</button></div><span class="lang">Python</span></div><pre><span class="row" id="s1"><span class="keyword">def</span> <span class="func">moonlight_events</span>(<span class="name">values</span>):</span><span class="row" id="s2">    <span class="name">chords</span> <span class="op">=</span> ((<span class="num">68</span>,<span class="num">73</span>,<span class="num">76</span>), (<span class="num">66</span>,<span class="num">71</span>,<span class="num">75</span>), (<span class="num">66</span>,<span class="num">70</span>,<span class="num">73</span>))</span><span class="row" id="s3">    <span class="name">peak</span>, <span class="name">events</span> <span class="op">=</span> <span class="func">max</span>(<span class="name">values</span>) <span class="keyword">or</span> <span class="num">1</span>, []</span><span class="row" id="s4">    <span class="keyword">for</span> <span class="name">step</span>, <span class="name">value</span> <span class="keyword">in</span> <span class="func">enumerate</span>(<span class="name">values</span>[<span class="num">1</span>:], <span class="num">1</span>):</span><span class="row" id="s5">        <span class="name">bar</span>, <span class="name">triplet</span> <span class="op">=</span> <span class="func">divmod</span>(<span class="name">step</span><span class="op">-</span><span class="num">1</span>, <span class="num">12</span>)</span><span class="row" id="s6">        <span class="name">chord</span> <span class="op">=</span> <span class="name">chords</span>[<span class="name">bar</span> <span class="op">%</span> <span class="func">len</span>(<span class="name">chords</span>)]</span><span class="row" id="s7">        <span class="name">events</span>.<span class="func">append</span>({<span class="str">&quot;time&quot;</span>:(<span class="name">step</span><span class="op">-</span><span class="num">1</span>)<span class="op">/</span><span class="num">3</span>, <span class="str">&quot;midi&quot;</span>:<span class="name">chord</span>[<span class="name">triplet</span><span class="op">%</span><span class="num">3</span>]})</span><span class="row" id="s8">    <span class="keyword">return</span> <span class="name">events</span></span><span class="row" id="s9">&nbsp;</span><span class="row" id="s10"><span class="name">midi_events</span> <span class="op">=</span> <span class="func">moonlight_events</span>(<span class="name">sequence</span>)</span></pre><div class="code-status"><span>arpeggio · 60 BPM</span><span>UTF-8 · Python 3.12</span></div>`;
+    function showCode(kind){ codeWrap.innerHTML=kind==='score'?scoreCode:recamanCode; }
+    function sleep(ms){ return new Promise(resolve=>setTimeout(resolve,ms)); }
+    function highlight(ids,kind='forward'){ document.querySelectorAll('.row').forEach(row=>row.className='row'); ids.forEach(id=>{const row=document.querySelector('#'+id); if(row)row.classList.add('active',kind);}); }
+    function firePulse(v,kind){ pulse.className='sync-pulse '+(kind==='backward'?'backward':''); pulse.style.left=pct(v)+'%'; void pulse.offsetWidth; pulse.classList.add('fire'); }
+    /* Every Recamán move gets exactly one third of a second: no late-run acceleration. */
+    function stepDuration(){ return 1000/3; }
+    const timeline=[0]; for(let i=1;i<=180;i++)timeline[i]=timeline[i-1]+stepDuration(i)/1000;
+    async function rewind(){ const began=performance.now(), duration=1000; return new Promise(done=>{const frame=now=>{const p=Math.min(1,(now-began)/duration), e=1-Math.pow(1-p,3), idx=Math.max(0,Math.round(180*(1-e))); render(idx,1,null); moveMarker(values[idx]); if(p<1)requestAnimationFrame(frame); else {domain=10; renderTicks(domain); render(0); moveMarker(0); done();}}; requestAnimationFrame(frame);}); }
+    function animateCinematicStep(i,state){ return new Promise(done=>{const fromDomain=domain,target=domainFor(i),began=performance.now(),duration=stepDuration(i); let markerMoved=false; renderTicks(target); const frame=now=>{const p=Math.min(1,(now-began)/duration),eased=1-Math.pow(1-p,3);domain=fromDomain+(target-fromDomain)*eased;render(i,eased,state);if(p>.34&&!markerMoved){moveMarker(values[i]);markerMoved=true;}if(p<1)requestAnimationFrame(frame);else{domain=target;render(i,1,null);moveMarker(values[i]);done();}};requestAnimationFrame(frame);}); }
+    function scheduleCinematicScore(start){ const total=timeline[100], fadeStart=start+Math.max(0,total-3), fadeEnd=start+total; master.gain.cancelScheduledValues(start);master.gain.setValueAtTime(.72,start);master.gain.setValueAtTime(.72,fadeStart);master.gain.linearRampToValueAtTime(.0001,fadeEnd);for(let step=1;step<=100;step++){const n=step-1,bar=MOONLIGHT[Math.floor(n/12)%MOONLIGHT.length],triplet=n%12,when=start+timeline[step-1],length=Math.max(1.25,stepDuration(step)/1000*4.3),back=values[step]<values[step-1];let note=bar.notes[back?0:triplet%3],velocity=.07+.045*(values[step]/MAX_VALUE);if(step>91){note=bar.notes[0];velocity*=.7;}if(triplet===0){const sustain=Math.min(4.3,(timeline[Math.min(100,step+12)]-timeline[step-1])*.92);moonlightPiano(bar.bass,when,.075,sustain);}moonlightPiano(note,when,velocity,length);}}
+    async function cinematicRun(){ reel.classList.add('code-on'); showCode('recaman'); finish.classList.remove('show'); await sleep(680); await rewind(); scoreStart=ctx.currentTime+.08; scheduleCinematicScore(scoreStart); await sleep(90); for(let i=1;i<=100;i++){const from=values[i-1],to=values[i],back=to<from,state={from,target:from-i,valid:back};if(i===61)showCode('score');const score=i>=61;highlight(score?['s4','s5','s6','s7']:(back?['r4','r5','r6','r7']:['r4','r5','r6','r8','r9','r10']),back?'backward':'forward');firePulse(to,back?'backward':'forward');value.textContent=to;counter.textContent='STEP '+String(i).padStart(3,'0');await animateCinematicStep(i,state);}highlight([]);finish.querySelector('strong').textContent='۱۰۰ حرکت. یک قانون.';finish.classList.add('show');}
+    domain=domainFor(180);renderTicks(domain);render(180);moveMarker(values[180]);value.textContent=values[180];
+    const oldButton=document.querySelector('.start button');const newButton=oldButton.cloneNode(true);oldButton.replaceWith(newButton);newButton.addEventListener('click',()=>{document.querySelector('#start').style.opacity=0;setTimeout(()=>document.querySelector('#start').remove(),480);setupAudio();cinematicRun();},{once:true});
+  </script>
+  <script>
+    /* V22: warm felt-piano score — continuous, phrased, and resolved. */
+    function feltPiano(midi, when, velocity=.08, length=2.4){
+      const freq=midiHz(midi), filter=ctx.createBiquadFilter(), env=ctx.createGain();
+      filter.type='lowpass'; filter.Q.value=.55;
+      filter.frequency.setValueAtTime(2100,when); filter.frequency.exponentialRampToValueAtTime(520,when+length*.86);
+      env.gain.setValueAtTime(.0001,when); env.gain.exponentialRampToValueAtTime(velocity,when+.042);
+      env.gain.exponentialRampToValueAtTime(velocity*.54,when+.62); env.gain.exponentialRampToValueAtTime(.0001,when+length);
+      [[1,.78,'sine',0],[2,.12,'sine',3],[.5,.055,'triangle',-4]].forEach(([ratio,level,type,detune])=>{
+        const osc=ctx.createOscillator(), gain=ctx.createGain(); osc.type=type; osc.frequency.value=freq*ratio; osc.detune.value=detune;
+        gain.gain.value=level; osc.connect(gain).connect(filter); osc.start(when); osc.stop(when+length+.08);
+      });
+      filter.connect(env); route(env,.66);
+    }
+    function pedalBed(notes, when, length){
+      notes.forEach((midi,position)=>{const osc=ctx.createOscillator(), filter=ctx.createBiquadFilter(), env=ctx.createGain();
+        osc.type='sine'; osc.frequency.value=midiHz(midi); osc.detune.value=position*3-3; filter.type='lowpass';filter.frequency.value=620;
+        env.gain.setValueAtTime(.0001,when);env.gain.exponentialRampToValueAtTime(.014,when+.32);env.gain.exponentialRampToValueAtTime(.0001,when+length);
+        osc.connect(filter).connect(env);route(env,.82);osc.start(when);osc.stop(when+length+.05);
+      });
+    }
+    function scheduleCinematicScore(start){
+      const total=timeline[100], fadeStart=start+Math.max(0,total-3), fadeEnd=start+total;
+      master.gain.cancelScheduledValues(start);master.gain.setValueAtTime(.68,start);master.gain.setValueAtTime(.68,fadeStart);master.gain.linearRampToValueAtTime(.0001,fadeEnd);
+      for(let step=1;step<=100;step++){
+        const n=step-1, bar=MOONLIGHT[Math.floor(n/12)%MOONLIGHT.length], triplet=n%12, when=start+timeline[n], back=values[step]<values[step-1], phrase=Math.sin((triplet/12)*Math.PI);
+        const isCoda=step>88, sustain=Math.min(5.1,(timeline[Math.min(100,step+12)]-timeline[n])*.96);
+        if(triplet===0){feltPiano(bar.bass,when,.066,isCoda?4.7:sustain);pedalBed([bar.bass+12,...bar.notes],when,isCoda?4.7:sustain);}
+        const note=isCoda?bar.notes[0]:bar.notes[back?0:triplet%3];
+        const velocity=(.045+.022*phrase+.026*(values[step]/MAX_VALUE))*(isCoda?.62:1);
+        feltPiano(note,when,velocity,isCoda?2.9:Math.max(1.75,stepDuration(step)/1000*6.8));
+      }
+    }
+  </script>
+  <script>
+    /* V23: score-led Moonlight piano. Recamán controls expression, never raw note choice. */
+    /* 15 × 12 triplets at 60 BPM = 60 s, exactly matching 180 visual moves. */
+    const SCORE_BPM=60, BEAT=60/SCORE_BPM, TRIPLET=BEAT/3;
+    const SCORE_BARS=[
+      /* I — exposition: the restrained theme the user approved. */
+      {bass:37,arp:[56,61,64],melody:[null,null,null,null,null,68,null,null,null,null,null,69]},
+      {bass:33,arp:[56,59,64],melody:[null,null,null,null,null,68,null,null,null,null,null,66]},
+      {bass:35,arp:[54,59,63],melody:[null,null,null,null,null,66,null,null,null,null,null,64]},
+      {bass:32,arp:[56,59,63],melody:[null,null,null,null,null,64,null,null,null,null,null,63]},
+      {bass:30,arp:[54,57,61],melody:[null,null,null,null,null,61,null,null,null,null,null,64]},
+      /* II — development: denser melody, related harmony, a dominant arrival. */
+      {bass:33,arp:[56,61,64],melody:[null,null,64,null,null,68,null,null,69,null,null,73]},
+      {bass:32,arp:[56,59,64],melody:[null,71,null,null,68,null,null,66,null,null,64,null]},
+      {bass:30,arp:[54,57,61],melody:[null,null,66,null,null,69,null,null,73,null,null,76]},
+      {bass:39,arp:[54,57,60],melody:[null,75,null,null,72,null,null,69,null,null,66,null]},
+      {bass:32,arp:[56,60,63],melody:[null,null,68,null,null,72,null,null,75,null,null,80]},
+      /* III — return and coda: the tension resolves through familiar voice-leading. */
+      {bass:40,arp:[56,61,64],melody:[null,null,76,null,null,73,null,null,71,null,null,68]},
+      {bass:33,arp:[56,61,64],melody:[null,69,null,null,68,null,null,64,null,null,61,null]},
+      {bass:33,arp:[54,57,61],melody:[null,null,66,null,null,69,null,null,68,null,null,64]},
+      {bass:32,arp:[56,60,63],melody:[null,63,null,null,68,null,null,72,null,null,75,null]},
+      {bass:37,arp:[56,61,64],melody:[null,null,73,null,null,68,null,null,64,null,null,61]}
+    ];
+    scoreMelodySlots=SCORE_BARS.flatMap(bar=>bar.melody.map(note=>note!==null));
+    function scheduleCinematicScore(start){
+      const total=SCORE_BARS.length*12*TRIPLET, fadeStart=start+total-3, fadeEnd=start+total;
+      master.gain.cancelScheduledValues(start);master.gain.setValueAtTime(.64,start);master.gain.setValueAtTime(.64,fadeStart);master.gain.linearRampToValueAtTime(.0001,fadeEnd);
+      /* One continuous miniature: exposition, development, return—never a loop. */
+      SCORE_BARS.forEach((bar,barIndex)=>{
+        const barStart=start+barIndex*12*TRIPLET, coda=barIndex===14, act=Math.floor(barIndex/5);
+        const bassVelocity=act===0?.074:act===1?.080:.068;
+        feltPiano(bar.bass,barStart,bassVelocity,coda?4.4:3.55);pedalBed([bar.bass+12,...bar.arp],barStart,coda?4.45:3.5);
+        for(let slot=0;slot<12;slot++){
+          const when=barStart+slot*TRIPLET+(slot%3===2?.012:0), order=[0,1,2,1][slot%4], recamanAccent=values[Math.min(180,barIndex*12+slot+1)]/MAX_VALUE;
+          const phraseShape=.004*Math.sin((slot/11)*Math.PI), velocity=.050+.013*recamanAccent+(slot%3===0?.008:0)+(act===1?.006:0)+phraseShape;
+          feltPiano(bar.arp[order],when,velocity,coda?2.2:2.0);
+          const melody=bar.melody[slot];
+          if(melody!==null)feltPiano(melody,when+.008,coda?.046:(act===1?.064:.057),coda?2.9:2.35);
+        }
+      });
+    }
+  </script>
+  <script>
+    /* V24: visuals are driven by the same AudioContext clock as the score. */
+    const SCORE_TOTAL_SECONDS=SCORE_BARS.length*12*TRIPLET;
+    const VISUAL_TOTAL_SECONDS=timeline[180];
+    const AUDIO_LOCKED_TIMELINE=timeline.map(t=>t/VISUAL_TOTAL_SECONDS*SCORE_TOTAL_SECONDS);
+    function waitForAudio(when){ return new Promise(done=>{const tick=()=>ctx.currentTime>=when?done():requestAnimationFrame(tick);tick();}); }
+    function animateAudioLockedStep(i,state,begin,end){ return new Promise(done=>{const fromDomain=domain,target=domainFor(i);let markerMoved=false;renderTicks(target);const frame=()=>{const p=Math.min(1,Math.max(0,(ctx.currentTime-begin)/(end-begin))),eased=1-Math.pow(1-p,3);domain=fromDomain+(target-fromDomain)*eased;render(i,eased,state);if(p>.34&&!markerMoved){moveMarker(values[i]);markerMoved=true;}if(ctx.currentTime<end)requestAnimationFrame(frame);else{domain=target;render(i,1,null);moveMarker(values[i]);done();}};frame();}); }
+    async function cinematicRun(){
+      reel.classList.add('code-on');showCode('recaman');finish.classList.remove('show');
+      await sleep(680);await rewind();
+      scoreStart=ctx.currentTime+.12;scheduleCinematicScore(scoreStart);await waitForAudio(scoreStart);
+      for(let i=1;i<=180;i++){
+        const from=values[i-1],to=values[i],back=to<from,state={from,target:from-i,valid:back};
+        reel.dataset.act=i<=60?'one':i<=120?'two':'three';
+        reel.dataset.cadence=i>=172?'true':'false';
+        if(i===61)showCode('score');
+        if(i===121)showCode('camera');
+        const scoreAct=i>=61&&i<=120;
+        const cameraAct=i>=121;
+        highlight(scoreAct?['s4','s5','s6','s7']:(cameraAct?['c4','c5','c6','c7']:(back?['r4','r5','r6','r7']:['r4','r5','r6','r8','r9','r10'])),back?'backward':'forward');
+        firePulse(to,back?'backward':'forward');value.textContent=to;counter.textContent='STEP '+String(i).padStart(3,'0');
+        await animateAudioLockedStep(i,state,scoreStart+AUDIO_LOCKED_TIMELINE[i-1],scoreStart+AUDIO_LOCKED_TIMELINE[i]);
+      }
+      highlight([]);await waitForAudio(scoreStart+SCORE_TOTAL_SECONDS);
+    }
+  </script>
+  <script>
+    /* V26: one-minute suite — the visible code matches the 180-step score. */
+    const suiteRecamanCode=`<div class="code-head"><span class="lights"><i></i><i></i><i></i></span><div class="code-tabs"><button class="code-tab active">recaman.py</button><button class="code-tab">score.py</button></div><span class="lang">Python</span></div><pre><span class="row" id="r1"><span class="keyword">def</span> <span class="func">recaman</span>(<span class="name">steps</span><span class="op">=</span><span class="num">180</span>):</span><span class="row" id="r2">    <span class="name">seen</span>, <span class="name">current</span> <span class="op">=</span> {<span class="num">0</span>}, <span class="num">0</span></span><span class="row" id="r3">    <span class="name">values</span> <span class="op">=</span> [<span class="name">current</span>]</span><span class="row" id="r4">    <span class="keyword">for</span> <span class="name">step</span> <span class="keyword">in</span> <span class="func">range</span>(<span class="num">1</span>, <span class="name">steps</span> <span class="op">+</span> <span class="num">1</span>):</span><span class="row" id="r5">        <span class="name">candidate</span> <span class="op">=</span> <span class="name">current</span> <span class="op">-</span> <span class="name">step</span></span><span class="row" id="r6">        <span class="keyword">if</span> <span class="name">candidate</span> <span class="op">&gt;</span> <span class="num">0</span> <span class="keyword">and</span> <span class="name">candidate</span> <span class="keyword">not in</span> <span class="name">seen</span>:</span><span class="row" id="r7">            <span class="name">current</span> <span class="op">=</span> <span class="name">candidate</span></span><span class="row" id="r8">        <span class="keyword">else</span>: <span class="name">current</span> <span class="op">+=</span> <span class="name">step</span></span><span class="row" id="r9">        <span class="name">seen</span>.<span class="func">add</span>(<span class="name">current</span>)</span><span class="row" id="r10">        <span class="name">values</span>.<span class="func">append</span>(<span class="name">current</span>)</span><span class="row" id="r11">    <span class="keyword">return</span> <span class="name">values</span></span></pre><div class="code-status"><span>180 jumps · 181 values</span><span>UTF-8 · Python 3.12</span></div>`;
+    const suiteScoreCode=`<div class="code-head"><span class="lights"><i></i><i></i><i></i></span><div class="code-tabs"><button class="code-tab">recaman.py</button><button class="code-tab active">score.py</button></div><span class="lang">Python</span></div><pre><span class="row" id="s1"><span class="keyword">def</span> <span class="func">score_suite</span>(<span class="name">values</span>, <span class="name">bpm</span><span class="op">=</span><span class="num">60</span>):</span><span class="row" id="s2">    <span class="name">bars</span> <span class="op">=</span> <span class="num">15</span>; <span class="name">triplets</span> <span class="op">=</span> <span class="num">12</span></span><span class="row" id="s3">    <span class="name">acts</span> <span class="op">=</span> (<span class="str">&quot;theme&quot;</span>, <span class="str">&quot;variation&quot;</span>, <span class="str">&quot;return&quot;</span>)</span><span class="row" id="s4">    <span class="keyword">for</span> <span class="name">step</span>, <span class="name">value</span> <span class="keyword">in</span> <span class="func">enumerate</span>(<span class="name">values</span>[<span class="num">1</span>:], <span class="num">1</span>):</span><span class="row" id="s5">        <span class="name">act</span> <span class="op">=</span> (<span class="name">step</span> <span class="op">-</span> <span class="num">1</span>) <span class="op">//</span> <span class="num">60</span></span><span class="row" id="s6">        <span class="name">bar</span>, <span class="name">slot</span> <span class="op">=</span> <span class="func">divmod</span>(<span class="name">step</span> <span class="op">-</span> <span class="num">1</span>, <span class="num">12</span>)</span><span class="row" id="s7">        <span class="name">color</span> <span class="op">=</span> (<span class="str">&quot;gold&quot;</span>, <span class="str">&quot;violet&quot;</span>, <span class="str">&quot;ember&quot;</span>)[<span class="name">act</span>]</span><span class="row" id="s8">        <span class="name">event</span> <span class="op">=</span> <span class="func">voice</span>(<span class="name">bar</span>, <span class="name">slot</span>, <span class="name">act</span>, <span class="name">value</span>)</span></pre><div class="code-status"><span>three acts · 60 BPM</span><span>UTF-8 · Python 3.12</span></div>`;
+    function showCode(kind){ codeWrap.innerHTML=kind==='score'?suiteScoreCode:suiteRecamanCode; }
+  </script>
+  <script>
+    /* V30: the final act exposes the projection code behind the cinematic depth. */
+    const cinematicCameraCode=`<div class="code-head"><span class="lights"><i></i><i></i><i></i></span><div class="code-tabs"><button class="code-tab">recaman.py</button><button class="code-tab">score.py</button><button class="code-tab active">camera.py</button></div><span class="lang">Python</span></div><pre><span class="row" id="c1"><span class="keyword">from</span> <span class="name">math</span> <span class="keyword">import</span> <span class="name">sin</span>, <span class="name">cos</span>, <span class="name">radians</span></span><span class="row" id="c2"><span class="keyword">def</span> <span class="func">project</span>(<span class="name">point</span>, <span class="name">camera</span>):</span><span class="row" id="c3">    <span class="name">x</span>, <span class="name">y</span>, <span class="name">z</span> <span class="op">=</span> <span class="name">point</span></span><span class="row" id="c4">    <span class="name">yaw</span> <span class="op">=</span> <span class="func">radians</span>(<span class="name">camera</span>.<span class="name">yaw</span>)</span><span class="row" id="c5">    <span class="name">rx</span> <span class="op">=</span> <span class="name">x</span><span class="op">*</span><span class="func">cos</span>(<span class="name">yaw</span>) <span class="op">+</span> <span class="name">z</span><span class="op">*</span><span class="func">sin</span>(<span class="name">yaw</span>)</span><span class="row" id="c6">    <span class="name">rz</span> <span class="op">=</span> <span class="op">-</span><span class="name">x</span><span class="op">*</span><span class="func">sin</span>(<span class="name">yaw</span>) <span class="op">+</span> <span class="name">z</span><span class="op">*</span><span class="func">cos</span>(<span class="name">yaw</span>)</span><span class="row" id="c7">    <span class="name">scale</span> <span class="op">=</span> <span class="name">camera</span>.<span class="name">focal</span> <span class="op">/</span> (<span class="name">camera</span>.<span class="name">focal</span> <span class="op">-</span> <span class="name">rz</span>)</span><span class="row" id="c8">    <span class="keyword">return</span> <span class="name">rx</span><span class="op">*</span><span class="name">scale</span>, <span class="name">y</span><span class="op">*</span><span class="name">scale</span></span><span class="row" id="c9">&nbsp;</span><span class="row" id="c10"><span class="keyword">def</span> <span class="func">depth</span>(<span class="name">step</span>, <span class="name">current</span>, <span class="name">gap</span><span class="op">=</span><span class="num">1.45</span>):</span><span class="row" id="c11">    <span class="keyword">return</span> (<span class="name">step</span> <span class="op">-</span> <span class="name">current</span>) <span class="op">*</span> <span class="name">gap</span></span></pre><div class="code-status"><span>perspective · temporal depth</span><span>UTF-8 · Python 3.12</span></div>`;
+    function showCode(kind){codeWrap.innerHTML=kind==='camera'?cinematicCameraCode:(kind==='score'?suiteScoreCode:suiteRecamanCode);}
+  </script>
+</body>
+</html>
